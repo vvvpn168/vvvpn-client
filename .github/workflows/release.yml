@@ -38,10 +38,9 @@ jobs:
             os: ubuntu-22.04
             ext: AppImage
             artifact: VVVPN-Linux-x64.AppImage
-          - platform: linux-arm64
-            os: ubuntu-22.04-arm
-            ext: AppImage
-            artifact: VVVPN-Linux-ARM64.AppImage
+          # linux-arm64 暂搁 —— Flutter 团队不发布 Linux ARM64 SDK 二进制，
+          # subosito/flutter-action 在 ubuntu-22.04-arm 上拿不到 SDK 直接挂。
+          # 想加必须先在 runner 上从源码 build Flutter（~15-20 min，脆弱）。
 
     runs-on: ${{ matrix.os }}
     steps:
