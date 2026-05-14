@@ -1,13 +1,13 @@
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
-import 'package:hiddify/core/http_client/dio_http_client.dart';
-import 'package:hiddify/core/utils/exception_handler.dart';
-import 'package:hiddify/features/proxy/model/ip_info_entity.dart' as oldipinfo;
+import 'package:vvvpn_client/core/http_client/dio_http_client.dart';
+import 'package:vvvpn_client/core/utils/exception_handler.dart';
+import 'package:vvvpn_client/features/proxy/model/ip_info_entity.dart' as oldipinfo;
 
-import 'package:hiddify/features/proxy/model/proxy_failure.dart';
-import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
-import 'package:hiddify/hiddifycore/hiddify_core_service.dart';
-import 'package:hiddify/utils/custom_loggers.dart';
+import 'package:vvvpn_client/features/proxy/model/proxy_failure.dart';
+import 'package:vvvpn_client/hiddifycore/generated/v2/hcore/hcore.pb.dart';
+import 'package:vvvpn_client/hiddifycore/hiddify_core_service.dart';
+import 'package:vvvpn_client/utils/custom_loggers.dart';
 
 abstract interface class ProxyRepository {
   // Stream<Either<ProxyFailure, List<OutboundGroup>>> watchProxies();

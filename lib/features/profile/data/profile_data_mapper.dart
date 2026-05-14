@@ -1,8 +1,8 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
-import 'package:hiddify/core/db/db.dart';
-import 'package:hiddify/features/profile/model/profile_entity.dart';
+import 'package:vvvpn_client/core/db/db.dart';
+import 'package:vvvpn_client/features/profile/model/profile_entity.dart';
 
 extension ProfileEntityMapper on ProfileEntity {
   ProfileEntriesCompanion toInsertEntry() => map(

@@ -1,4 +1,4 @@
-import 'package:hiddify/gen/translations.g.dart';
+import 'package:vvvpn_client/gen/translations.g.dart';
 
 enum ActionsAtClosing {
   ask,

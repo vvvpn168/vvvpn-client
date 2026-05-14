@@ -2,15 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 abstract class Constants {
-  static const appName = "Hiddify";
-  static const githubUrl = "https://github.com/hiddify/hiddify-next";
-  static const licenseUrl = "https://github.com/hiddify/hiddify-next?tab=License-1-ov-file#readme";
-  static const githubReleasesApiUrl = "https://api.github.com/repos/hiddify/hiddify-next/releases";
-  static const githubLatestReleaseUrl = "https://github.com/hiddify/hiddify-app/releases/latest";
+  static const appName = "VVVPN";
+  static const githubUrl = "https://github.com/vvvpn168/vvvpn-client";
+  static const upstreamSourceUrl = "https://github.com/hiddify/hiddify-next";
+  static const licenseUrl = "https://github.com/vvvpn168/vvvpn-client/blob/main/LICENSE";
+  static const githubReleasesApiUrl = "https://api.github.com/repos/vvvpn168/vvvpn-client/releases";
+  static const githubLatestReleaseUrl = "https://github.com/vvvpn168/vvvpn-client/releases/latest";
   static const appCastUrl = "https://raw.githubusercontent.com/hiddify/hiddify-next/main/appcast.xml";
   static const telegramChannelUrl = "https://t.me/hiddify";
-  static const privacyPolicyUrl = "https://hiddify.com/privacy-policy/";
-  static const termsAndConditionsUrl = "https://hiddify.com/terms/";
+  static const privacyPolicyUrl = "https://vvvpn168.com/privacy";
+  static const termsAndConditionsUrl = "https://vvvpn168.com/terms";
   static const cfWarpPrivacyPolicy = "https://www.cloudflare.com/application/privacypolicy/";
   static const cfWarpTermsOfService = "https://www.cloudflare.com/application/terms/";
 }

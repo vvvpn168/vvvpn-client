@@ -1,5 +1,5 @@
-import 'package:hiddify/core/preferences/preferences_provider.dart';
-import 'package:hiddify/core/theme/app_theme_mode.dart';
+import 'package:vvvpn_client/core/preferences/preferences_provider.dart';
+import 'package:vvvpn_client/core/theme/app_theme_mode.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'theme_preferences.g.dart';

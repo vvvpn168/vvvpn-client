@@ -1,11 +1,11 @@
 import 'dart:async';
 
-import 'package:hiddify/core/localization/translations.dart';
-import 'package:hiddify/core/notification/in_app_notification_controller.dart';
-import 'package:hiddify/core/preferences/general_preferences.dart';
-import 'package:hiddify/features/per_app_proxy/data/selected_data_provider.dart';
-import 'package:hiddify/features/per_app_proxy/model/per_app_proxy_mode.dart';
-import 'package:hiddify/features/per_app_proxy/overview/per_app_proxy_notifier.dart';
+import 'package:vvvpn_client/core/localization/translations.dart';
+import 'package:vvvpn_client/core/notification/in_app_notification_controller.dart';
+import 'package:vvvpn_client/core/preferences/general_preferences.dart';
+import 'package:vvvpn_client/features/per_app_proxy/data/selected_data_provider.dart';
+import 'package:vvvpn_client/features/per_app_proxy/model/per_app_proxy_mode.dart';
+import 'package:vvvpn_client/features/per_app_proxy/overview/per_app_proxy_notifier.dart';
 import 'package:installed_apps/index.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 

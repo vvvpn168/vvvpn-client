@@ -1,16 +1,16 @@
 import 'dart:convert';
 import 'dart:developer';
 
-import 'package:hiddify/core/localization/translations.dart';
-import 'package:hiddify/core/model/failures.dart';
-import 'package:hiddify/core/notification/in_app_notification_controller.dart';
-import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
-import 'package:hiddify/features/profile/data/profile_data_providers.dart';
-import 'package:hiddify/features/profile/data/profile_repository.dart';
-import 'package:hiddify/features/profile/details/profile_details_state.dart';
-import 'package:hiddify/features/profile/model/profile_entity.dart';
-import 'package:hiddify/features/profile/model/profile_failure.dart';
-import 'package:hiddify/utils/utils.dart';
+import 'package:vvvpn_client/core/localization/translations.dart';
+import 'package:vvvpn_client/core/model/failures.dart';
+import 'package:vvvpn_client/core/notification/in_app_notification_controller.dart';
+import 'package:vvvpn_client/core/router/dialog/dialog_notifier.dart';
+import 'package:vvvpn_client/features/profile/data/profile_data_providers.dart';
+import 'package:vvvpn_client/features/profile/data/profile_repository.dart';
+import 'package:vvvpn_client/features/profile/details/profile_details_state.dart';
+import 'package:vvvpn_client/features/profile/model/profile_entity.dart';
+import 'package:vvvpn_client/features/profile/model/profile_failure.dart';
+import 'package:vvvpn_client/utils/utils.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'profile_details_notifier.g.dart';

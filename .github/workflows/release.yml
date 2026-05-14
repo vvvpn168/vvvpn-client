@@ -1,20 +1,141 @@
 name: Release
+
 on:
   push:
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
-      - 'v[0-9]+.[0-9]+.[0-9]+.*'
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  FLUTTER_VERSION: '3.38.5'
+
+permissions:
+  contents: write
+
 jobs:
-  build-release:
-    uses: ./.github/workflows/build.yml
-    secrets: inherit
-    permissions: write-all
-    with:
-      upload-artifact: true
-      tag-name: "${{ github.ref_name }}"
-      channel: "${{ github.ref_type == 'tag' && endsWith(github.ref_name, 'dev') && 'dev' || github.ref_type != 'tag' && 'dev' || 'prod' }}"
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: android-apk
+            os: ubuntu-latest
+            ext: apk
+            artifact: VVVPN-Android.apk
+          - platform: windows
+            os: windows-latest
+            ext: zip
+            artifact: VVVPN-Windows-Portable-x64.zip
+          - platform: macos
+            os: macos-15
+            ext: dmg
+            artifact: VVVPN-macOS.dmg
+          - platform: linux
+            os: ubuntu-22.04
+            ext: AppImage
+            artifact: VVVPN-Linux-x64.AppImage
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Free disk (Android only)
+        if: startsWith(matrix.platform, 'android')
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL
+          rm -rf ~/.gradle/caches
+          sudo apt-get autoremove -y && sudo apt-get clean
+          df -h
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2.21.0
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Setup Java (Android)
+        if: startsWith(matrix.platform, 'android')
+        uses: actions/setup-java@v5
+        with:
+          distribution: zulu
+          java-version: '17'
+
+      - name: Setup Android SDK
+        if: startsWith(matrix.platform, 'android')
+        uses: android-actions/setup-android@v3
+
+      - name: Cache Gradle (Android)
+        if: startsWith(matrix.platform, 'android')
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Install platform deps
+        run: make ${{ matrix.platform }}-install-deps
+        env:
+          IS_GITHUB_ACTIONS: 1
+
+      - name: Prepare
+        run: make ${{ matrix.platform }}-prepare
+        env:
+          IS_GITHUB_ACTIONS: 1
+
+      - name: Build
+        run: make ${{ matrix.platform }}-release
+        env:
+          IS_GITHUB_ACTIONS: 1
+          CHANNEL: prod
+
+      - name: Locate artifact (POSIX)
+        if: matrix.os != 'windows-latest'
+        id: find_unix
+        run: |
+          set -euxo pipefail
+          path=$(find dist build -type f -name "*.${{ matrix.ext }}" 2>/dev/null | head -n1)
+          if [ -z "$path" ]; then
+            echo "no .${{ matrix.ext }} artifact found"
+            find dist build -type f 2>/dev/null | head -50
+            exit 1
+          fi
+          cp "$path" "${{ matrix.artifact }}"
+          echo "path=${{ matrix.artifact }}" >> "$GITHUB_OUTPUT"
+
+      - name: Locate artifact (Windows)
+        if: matrix.os == 'windows-latest'
+        id: find_win
+        shell: pwsh
+        run: |
+          $file = Get-ChildItem -Recurse -Path dist,build -Filter "*.${{ matrix.ext }}" -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $file) {
+            Get-ChildItem -Recurse -Path dist,build -ErrorAction SilentlyContinue | Select-Object FullName -First 50
+            throw "no .${{ matrix.ext }} artifact found"
+          }
+          Copy-Item $file.FullName -Destination "${{ matrix.artifact }}"
+          "path=${{ matrix.artifact }}" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Upload to Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.artifact }}
+          fail_on_unmatched_files: true
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+
+      - name: Upload artifact (workflow_dispatch)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}

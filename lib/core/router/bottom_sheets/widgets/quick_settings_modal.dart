@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hiddify/core/localization/translations.dart';
-import 'package:hiddify/features/settings/data/config_option_repository.dart';
-import 'package:hiddify/features/settings/notifier/warp_option/warp_option_notifier.dart';
-import 'package:hiddify/singbox/model/singbox_config_enum.dart';
+import 'package:vvvpn_client/core/localization/translations.dart';
+import 'package:vvvpn_client/features/settings/data/config_option_repository.dart';
+import 'package:vvvpn_client/features/settings/notifier/warp_option/warp_option_notifier.dart';
+import 'package:vvvpn_client/singbox/model/singbox_config_enum.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 class QuickSettingsModal extends HookConsumerWidget {

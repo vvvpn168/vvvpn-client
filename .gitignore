@@ -61,10 +61,12 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-
 /data
 .cxx
 
 # Windows Self-Signed for msix
 windows/sign.pfx
 windows/sign.cer
+
+# FVM Version Cache
+.fvm/

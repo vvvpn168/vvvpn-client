@@ -2,17 +2,17 @@ import 'dart:async';
 
 import 'package:dartx/dartx.dart';
 
-import 'package:hiddify/core/haptic/haptic_service.dart';
-import 'package:hiddify/core/localization/translations.dart';
-import 'package:hiddify/core/preferences/preferences_provider.dart';
-import 'package:hiddify/core/utils/preferences_utils.dart';
-import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
-import 'package:hiddify/features/proxy/data/proxy_data_providers.dart';
-import 'package:hiddify/features/proxy/model/proxy_failure.dart';
-import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
-import 'package:hiddify/hiddifycore/init_signal.dart';
-import 'package:hiddify/utils/riverpod_utils.dart';
-import 'package:hiddify/utils/utils.dart';
+import 'package:vvvpn_client/core/haptic/haptic_service.dart';
+import 'package:vvvpn_client/core/localization/translations.dart';
+import 'package:vvvpn_client/core/preferences/preferences_provider.dart';
+import 'package:vvvpn_client/core/utils/preferences_utils.dart';
+import 'package:vvvpn_client/features/connection/notifier/connection_notifier.dart';
+import 'package:vvvpn_client/features/proxy/data/proxy_data_providers.dart';
+import 'package:vvvpn_client/features/proxy/model/proxy_failure.dart';
+import 'package:vvvpn_client/hiddifycore/generated/v2/hcore/hcore.pb.dart';
+import 'package:vvvpn_client/hiddifycore/init_signal.dart';
+import 'package:vvvpn_client/utils/riverpod_utils.dart';
+import 'package:vvvpn_client/utils/utils.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'proxies_overview_notifier.g.dart';

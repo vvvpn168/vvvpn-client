@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
-import 'package:hiddify/core/localization/translations.dart';
-import 'package:hiddify/features/profile/notifier/profile_notifier.dart';
+import 'package:vvvpn_client/core/localization/translations.dart';
+import 'package:vvvpn_client/features/profile/notifier/profile_notifier.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 class ProfileLoading extends ConsumerWidget {

@@ -4,20 +4,20 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hiddify/core/localization/translations.dart';
-import 'package:hiddify/core/model/constants.dart';
-import 'package:hiddify/core/model/failures.dart';
-import 'package:hiddify/core/notification/in_app_notification_controller.dart';
-import 'package:hiddify/core/router/bottom_sheets/bottom_sheets_notifier.dart';
-import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
-import 'package:hiddify/core/router/go_router/helper/active_breakpoint_notifier.dart';
-import 'package:hiddify/core/widget/adaptive_icon.dart';
-import 'package:hiddify/core/widget/adaptive_menu.dart';
-import 'package:hiddify/features/profile/model/profile_entity.dart';
-import 'package:hiddify/features/profile/notifier/profile_notifier.dart';
-import 'package:hiddify/features/profile/overview/profiles_notifier.dart';
-import 'package:hiddify/gen/fonts.gen.dart';
-import 'package:hiddify/utils/utils.dart';
+import 'package:vvvpn_client/core/localization/translations.dart';
+import 'package:vvvpn_client/core/model/constants.dart';
+import 'package:vvvpn_client/core/model/failures.dart';
+import 'package:vvvpn_client/core/notification/in_app_notification_controller.dart';
+import 'package:vvvpn_client/core/router/bottom_sheets/bottom_sheets_notifier.dart';
+import 'package:vvvpn_client/core/router/dialog/dialog_notifier.dart';
+import 'package:vvvpn_client/core/router/go_router/helper/active_breakpoint_notifier.dart';
+import 'package:vvvpn_client/core/widget/adaptive_icon.dart';
+import 'package:vvvpn_client/core/widget/adaptive_menu.dart';
+import 'package:vvvpn_client/features/profile/model/profile_entity.dart';
+import 'package:vvvpn_client/features/profile/notifier/profile_notifier.dart';
+import 'package:vvvpn_client/features/profile/overview/profiles_notifier.dart';
+import 'package:vvvpn_client/gen/fonts.gen.dart';
+import 'package:vvvpn_client/utils/utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:url_launcher/url_launcher.dart';
@@ -95,11 +95,8 @@ class ProfileTile extends HookConsumerWidget {
                         : ProfileTileConst.cardBorderRadius,
                     onTap: () {
                       if (isMain) {
-                        if (Breakpoint(context).isMobile()) {
-                          ref.read(bottomSheetsNotifierProvider.notifier).showProfilesOverview();
-                        } else {
-                          context.goNamed('profiles');
-                        }
+                        // VVVPN: Pre-MVP 砍多选入口；点活动 profile 等同于重新导入订阅
+                        ref.read(bottomSheetsNotifierProvider.notifier).showAddProfile();
                       } else {
                         if (selectActiveMutation.state.isInProgress) return;
                         // if (profile.active) return;

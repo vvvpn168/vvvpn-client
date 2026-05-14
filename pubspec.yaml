@@ -1,5 +1,5 @@
-name: hiddify
-description: Cross Platform Multi Protocol Proxy Frontend.
+name: vvvpn_client
+description: "VVVPN client (fork of Hiddify Next, GPL-3.0). Source: https://github.com/vvvpn168/vvvpn-client"
 publish_to: "none"
 version: 4.1.2+40102
 
@@ -208,3 +208,29 @@ sentry:
   upload_sources: true
   log_level: info
   ignore_missing: true
+
+# Appended to fork's pubspec.yaml by apply-branding.sh.
+# Regenerate native assets after editing:
+#   flutter pub add --dev flutter_launcher_icons
+#   flutter pub run flutter_launcher_icons
+#
+# Sources (copied into fork by apply-branding.sh):
+#   assets/images/vvvpn_ic_launcher.png     — squared 1024, full gradient + shield (image_path)
+#   assets/images/vvvpn_ic_launcher_bg.png  — gradient only (adaptive background)
+#   assets/images/vvvpn_ic_launcher_fg.png  — shield only, transparent bg (adaptive foreground)
+#
+# All three regenerated from apps/client/branding/generate-icon.py (oklch → sRGB).
+flutter_launcher_icons:
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  image_path: "assets/images/vvvpn_ic_launcher.png"
+  adaptive_icon_background: "assets/images/vvvpn_ic_launcher_bg.png"
+  adaptive_icon_foreground: "assets/images/vvvpn_ic_launcher_fg.png"
+  min_sdk_android: 21
+  web:
+    generate: false
+  windows:
+    generate: false
+  macos:
+    generate: false

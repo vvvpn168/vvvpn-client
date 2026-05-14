@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hiddify/core/localization/translations.dart';
-import 'package:hiddify/core/model/constants.dart';
-import 'package:hiddify/utils/utils.dart';
+import 'package:vvvpn_client/core/localization/translations.dart';
+import 'package:vvvpn_client/core/model/constants.dart';
+import 'package:vvvpn_client/utils/utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 class SettingsSliderDialog extends HookConsumerWidget with PresLogger {

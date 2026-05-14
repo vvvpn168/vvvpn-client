@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
-import 'package:hiddify/core/localization/locale_preferences.dart';
-import 'package:hiddify/core/localization/translations.dart';
-import 'package:hiddify/features/common/custom_text_scroll.dart';
-import 'package:hiddify/features/profile/add/model/free_profiles_model.dart';
+import 'package:vvvpn_client/core/localization/locale_preferences.dart';
+import 'package:vvvpn_client/core/localization/translations.dart';
+import 'package:vvvpn_client/features/common/custom_text_scroll.dart';
+import 'package:vvvpn_client/features/profile/add/model/free_profiles_model.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 class FreeBtn extends ConsumerWidget {

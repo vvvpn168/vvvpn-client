@@ -1,9 +1,9 @@
 import 'package:drift/drift.dart';
-import 'package:hiddify/core/db/db.dart';
-import 'package:hiddify/features/per_app_proxy/model/per_app_proxy_backup.dart';
-import 'package:hiddify/features/per_app_proxy/model/per_app_proxy_mode.dart';
-import 'package:hiddify/features/per_app_proxy/model/pkg_flag.dart';
-import 'package:hiddify/utils/custom_loggers.dart';
+import 'package:vvvpn_client/core/db/db.dart';
+import 'package:vvvpn_client/features/per_app_proxy/model/per_app_proxy_backup.dart';
+import 'package:vvvpn_client/features/per_app_proxy/model/per_app_proxy_mode.dart';
+import 'package:vvvpn_client/features/per_app_proxy/model/pkg_flag.dart';
+import 'package:vvvpn_client/utils/custom_loggers.dart';
 
 part 'app_proxy_data_source.g.dart';
 

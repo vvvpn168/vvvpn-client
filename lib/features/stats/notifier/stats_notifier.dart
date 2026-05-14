@@ -1,8 +1,8 @@
-import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
-import 'package:hiddify/features/stats/data/stats_data_providers.dart';
-import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
-import 'package:hiddify/utils/custom_loggers.dart';
-import 'package:hiddify/utils/riverpod_utils.dart';
+import 'package:vvvpn_client/features/connection/notifier/connection_notifier.dart';
+import 'package:vvvpn_client/features/stats/data/stats_data_providers.dart';
+import 'package:vvvpn_client/hiddifycore/generated/v2/hcore/hcore.pb.dart';
+import 'package:vvvpn_client/utils/custom_loggers.dart';
+import 'package:vvvpn_client/utils/riverpod_utils.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'stats_notifier.g.dart';

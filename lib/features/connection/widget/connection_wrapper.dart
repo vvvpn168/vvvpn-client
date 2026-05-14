@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:hiddify/core/localization/translations.dart';
-import 'package:hiddify/core/notification/in_app_notification_controller.dart';
-import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
-import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
-import 'package:hiddify/features/settings/notifier/config_option/config_option_notifier.dart';
-import 'package:hiddify/utils/custom_loggers.dart';
+import 'package:vvvpn_client/core/localization/translations.dart';
+import 'package:vvvpn_client/core/notification/in_app_notification_controller.dart';
+import 'package:vvvpn_client/features/connection/notifier/connection_notifier.dart';
+import 'package:vvvpn_client/features/profile/notifier/active_profile_notifier.dart';
+import 'package:vvvpn_client/features/settings/notifier/config_option/config_option_notifier.dart';
+import 'package:vvvpn_client/utils/custom_loggers.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 class ConnectionWrapper extends StatefulHookConsumerWidget {

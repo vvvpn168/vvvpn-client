@@ -1,5 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:hiddify/core/model/environment.dart';
+import 'package:vvvpn_client/core/model/environment.dart';
 
 part 'app_info_entity.freezed.dart';
 

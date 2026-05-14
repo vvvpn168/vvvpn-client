@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:hiddify/core/localization/translations.dart';
-import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
-import 'package:hiddify/features/route_rules/notifier/rules_notifier.dart';
-import 'package:hiddify/features/route_rules/overview/rule_page.dart';
-import 'package:hiddify/features/route_rules/widget/setting_detail_chips.dart';
-import 'package:hiddify/hiddifycore/generated/v2/config/route_rule.pb.dart';
-import 'package:hiddify/utils/platform_utils.dart';
+import 'package:vvvpn_client/core/localization/translations.dart';
+import 'package:vvvpn_client/core/router/dialog/dialog_notifier.dart';
+import 'package:vvvpn_client/features/route_rules/notifier/rules_notifier.dart';
+import 'package:vvvpn_client/features/route_rules/overview/rule_page.dart';
+import 'package:vvvpn_client/features/route_rules/widget/setting_detail_chips.dart';
+import 'package:vvvpn_client/hiddifycore/generated/v2/config/route_rule.pb.dart';
+import 'package:vvvpn_client/utils/platform_utils.dart';
 
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:protobuf/protobuf.dart';

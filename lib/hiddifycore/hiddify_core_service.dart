@@ -4,26 +4,26 @@ import 'dart:math';
 
 import 'package:fpdart/fpdart.dart';
 import 'package:grpc/grpc.dart';
-import 'package:hiddify/core/directories/directories_provider.dart';
-import 'package:hiddify/core/model/directories.dart';
-import 'package:hiddify/core/notification/in_app_notification_controller.dart';
-import 'package:hiddify/core/preferences/general_preferences.dart';
-import 'package:hiddify/features/connection/model/connection_failure.dart';
-import 'package:hiddify/features/settings/data/config_option_repository.dart';
-import 'package:hiddify/hiddifycore/core_interface/core_interface.dart';
-import 'package:hiddify/hiddifycore/generated/v2/hcommon/common.pb.dart';
-import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
-import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore_service.pbgrpc.dart';
-import 'package:hiddify/hiddifycore/init_signal.dart';
-import 'package:hiddify/singbox/model/singbox_config_option.dart';
-import 'package:hiddify/features/log/model/log_level.dart' as config_log_level;
-import 'package:hiddify/singbox/model/core_status.dart';
-import 'package:hiddify/singbox/model/warp_account.dart';
+import 'package:vvvpn_client/core/directories/directories_provider.dart';
+import 'package:vvvpn_client/core/model/directories.dart';
+import 'package:vvvpn_client/core/notification/in_app_notification_controller.dart';
+import 'package:vvvpn_client/core/preferences/general_preferences.dart';
+import 'package:vvvpn_client/features/connection/model/connection_failure.dart';
+import 'package:vvvpn_client/features/settings/data/config_option_repository.dart';
+import 'package:vvvpn_client/hiddifycore/core_interface/core_interface.dart';
+import 'package:vvvpn_client/hiddifycore/generated/v2/hcommon/common.pb.dart';
+import 'package:vvvpn_client/hiddifycore/generated/v2/hcore/hcore.pb.dart';
+import 'package:vvvpn_client/hiddifycore/generated/v2/hcore/hcore_service.pbgrpc.dart';
+import 'package:vvvpn_client/hiddifycore/init_signal.dart';
+import 'package:vvvpn_client/singbox/model/singbox_config_option.dart';
+import 'package:vvvpn_client/features/log/model/log_level.dart' as config_log_level;
+import 'package:vvvpn_client/singbox/model/core_status.dart';
+import 'package:vvvpn_client/singbox/model/warp_account.dart';
 
-import 'package:hiddify/hiddifycore/core_interface/core_interface_wrapper_stub.dart'
-    if (dart.library.io) 'package:hiddify/hiddifycore/core_interface/core_interface_wrapper.dart';
-import 'package:hiddify/utils/custom_loggers.dart';
-import 'package:hiddify/utils/platform_utils.dart';
+import 'package:vvvpn_client/hiddifycore/core_interface/core_interface_wrapper_stub.dart'
+    if (dart.library.io) 'package:vvvpn_client/hiddifycore/core_interface/core_interface_wrapper.dart';
+import 'package:vvvpn_client/utils/custom_loggers.dart';
+import 'package:vvvpn_client/utils/platform_utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:loggy/loggy.dart' as loggyl;
 import 'package:riverpod_annotation/riverpod_annotation.dart';

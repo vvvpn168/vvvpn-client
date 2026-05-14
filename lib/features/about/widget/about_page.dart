@@ -2,17 +2,17 @@ import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
-import 'package:hiddify/core/app_info/app_info_provider.dart';
-import 'package:hiddify/core/directories/directories_provider.dart';
-import 'package:hiddify/core/localization/translations.dart';
-import 'package:hiddify/core/model/constants.dart';
-import 'package:hiddify/core/model/failures.dart';
-import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
-import 'package:hiddify/core/widget/adaptive_icon.dart';
-import 'package:hiddify/features/app_update/notifier/app_update_notifier.dart';
-import 'package:hiddify/features/app_update/notifier/app_update_state.dart';
-import 'package:hiddify/gen/assets.gen.dart';
-import 'package:hiddify/utils/utils.dart';
+import 'package:vvvpn_client/core/app_info/app_info_provider.dart';
+import 'package:vvvpn_client/core/directories/directories_provider.dart';
+import 'package:vvvpn_client/core/localization/translations.dart';
+import 'package:vvvpn_client/core/model/constants.dart';
+import 'package:vvvpn_client/core/model/failures.dart';
+import 'package:vvvpn_client/core/router/dialog/dialog_notifier.dart';
+import 'package:vvvpn_client/core/widget/adaptive_icon.dart';
+import 'package:vvvpn_client/features/app_update/notifier/app_update_notifier.dart';
+import 'package:vvvpn_client/features/app_update/notifier/app_update_state.dart';
+import 'package:vvvpn_client/gen/assets.gen.dart';
+import 'package:vvvpn_client/utils/utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 class AboutPage extends HookConsumerWidget {
@@ -107,6 +107,21 @@ class AboutPage extends HookConsumerWidget {
             delegate: SliverChildListDelegate([
               ...conditionalTiles,
               if (conditionalTiles.isNotEmpty) const Divider(),
+              ListTile(
+                title: const Text("Based on Hiddify Next (GPL-3.0)"),
+                subtitle: const Text("Original author: hiddify"),
+                trailing: const Icon(FluentIcons.open_24_regular),
+                onTap: () async {
+                  await UriUtils.tryLaunch(Uri.parse(Constants.upstreamSourceUrl));
+                },
+              ),
+              ListTile(
+                title: const Text("License: GPL-3.0"),
+                trailing: const Icon(FluentIcons.open_24_regular),
+                onTap: () async {
+                  await UriUtils.tryLaunch(Uri.parse(Constants.licenseUrl));
+                },
+              ),
               ListTile(
                 title: Text(t.pages.about.sourceCode),
                 trailing: const Icon(FluentIcons.open_24_regular),

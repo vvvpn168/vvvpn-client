@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:hiddify/utils/validators.dart';
+import 'package:vvvpn_client/utils/validators.dart';
 
 typedef ProfileLink = ({String url, String name});
 
