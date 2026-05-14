@@ -38,6 +38,10 @@ jobs:
             os: ubuntu-22.04
             ext: AppImage
             artifact: VVVPN-Linux-x64.AppImage
+          - platform: linux-arm64
+            os: ubuntu-22.04-arm
+            ext: AppImage
+            artifact: VVVPN-Linux-ARM64.AppImage
 
     runs-on: ${{ matrix.os }}
     steps:
