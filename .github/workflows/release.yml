@@ -99,6 +99,32 @@ jobs:
           IS_GITHUB_ACTIONS: 1
           CHANNEL: prod
 
+      # Hiddify Makefile 的 windows-zip-release 用 `tar -a -cf <name>.zip Hiddify`
+      # 妄图靠 -a 自动选 zip 格式，但 windows-latest runner 的 tar 不识别 zip
+      # 后缀，造出来是 tar 改名 — Windows 双击 "无效的 zip"。
+      # 这里检查 magic，遇到非 PK 开头的就解压重打成真 zip。
+      - name: Repack Windows zip if it's actually tar
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          Get-ChildItem -Recurse -Path dist -Filter "*.zip" | ForEach-Object {
+            $f = $_.FullName
+            $bytes = [System.IO.File]::ReadAllBytes($f) | Select-Object -First 4
+            $isPK = ($bytes[0] -eq 0x50 -and $bytes[1] -eq 0x4B)
+            if (-not $isPK) {
+              Write-Host "Repacking $f (was tar)"
+              $tmp = Join-Path $env:RUNNER_TEMP "winzip-extract"
+              if (Test-Path $tmp) { Remove-Item -Recurse -Force $tmp }
+              New-Item -ItemType Directory -Path $tmp -Force | Out-Null
+              tar -xf $f -C $tmp
+              Remove-Item $f
+              Compress-Archive -Path "$tmp\*" -DestinationPath $f
+              Write-Host "Done. New size: $((Get-Item $f).Length) bytes"
+            } else {
+              Write-Host "$f is already a real ZIP"
+            }
+          }
+
       - name: Locate artifact (POSIX)
         if: matrix.os != 'windows-latest'
         id: find_unix
