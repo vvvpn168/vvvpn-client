@@ -10,8 +10,12 @@ import 'package:vvvpn_client/features/profile/widget/profile_tile.dart';
 import 'package:vvvpn_client/features/proxy/active/active_proxy_card.dart';
 import 'package:vvvpn_client/features/proxy/active/active_proxy_delay_indicator.dart';
 import 'package:vvvpn_client/gen/assets.gen.dart';
+import 'package:vvvpn_client/utils/uri_utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:sliver_tools/sliver_tools.dart';
+
+// VVVPN: 续费跳转 web —— iOS 审核要求支付不在 client 内做（per docs/014）
+const _pricingUrl = 'https://vvvpn168.com/pricing';
 
 class HomePage extends HookConsumerWidget {
   const HomePage({super.key});
@@ -48,18 +52,19 @@ class HomePage extends HookConsumerWidget {
           ],
         ),
         actions: [
-          // IconButton(
-          //     onPressed: () => const QuickSettingsRoute().push(context),
-          //     icon: const Icon(FluentIcons.options_24_filled),
-          //     material: (context, platform) => MaterialIconButtonData(
-          //           tooltip: t.config.quickSettings,
-          //         )),
-          // IconButton(
-          //     onPressed: () => const AddProfileRoute().push(context),
-          //     icon: const Icon(FluentIcons.add_circle_24_filled),
-          //     material: (context, platform) => MaterialIconButtonData(
-          //           tooltip: t.profile.add.buttonText,
-          //         )),
+          // VVVPN: 续费 / 升级 —— 打开外部浏览器到 vvvpn168.com/pricing
+          Semantics(
+            key: const ValueKey("renew_button"),
+            label: "续费",
+            child: TextButton.icon(
+              icon: Icon(Icons.credit_card_rounded, size: 18, color: theme.colorScheme.primary),
+              label: Text(
+                "续费",
+                style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.w600),
+              ),
+              onPressed: () => UriUtils.tryLaunch(Uri.parse(_pricingUrl)),
+            ),
+          ),
           Semantics(
             key: const ValueKey("profile_quick_settings"),
             label: t.pages.home.quickSettings,
