@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 import 'package:vvvpn_client/core/localization/translations.dart';
 import 'package:vvvpn_client/core/router/bottom_sheets/bottom_sheets_notifier.dart';
-import 'package:vvvpn_client/utils/uri_utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-
-// VVVPN: 空 profile 状态主推"登录导入"—— web /login?return_to=app 流程
-const _loginUrl = 'https://vvvpn168.com/login?return_to=app';
 
 class EmptyProfilesHomeBody extends HookConsumerWidget {
   const EmptyProfilesHomeBody({super.key});
@@ -32,15 +29,15 @@ class EmptyProfilesHomeBody extends HookConsumerWidget {
             ),
             const Gap(8),
             Text(
-              "未注册请先在浏览器访问 vvvpn168.com 创建账号",
+              "用 vvvpn168.com 邮箱密码登录，订阅自动同步到本机",
               style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
               textAlign: TextAlign.center,
             ),
             const Gap(20),
             ElevatedButton.icon(
-              icon: const Icon(Icons.open_in_browser_rounded),
-              label: const Text("登录并导入订阅"),
-              onPressed: () => UriUtils.tryLaunch(Uri.parse(_loginUrl)),
+              icon: const Icon(Icons.login_rounded),
+              label: const Text("登录账号"),
+              onPressed: () => context.push('/login'),
             ),
             const Gap(12),
             TextButton(

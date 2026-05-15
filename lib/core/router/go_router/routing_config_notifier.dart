@@ -7,6 +7,7 @@ import 'package:vvvpn_client/core/router/go_router/helper/active_breakpoint_noti
 import 'package:vvvpn_client/core/router/go_router/helper/custom_transition.dart';
 import 'package:vvvpn_client/core/router/go_router/refresh_listenable.dart';
 import 'package:vvvpn_client/features/about/widget/about_page.dart';
+import 'package:vvvpn_client/features/auth/widget/login_page.dart';
 import 'package:vvvpn_client/features/home/widget/home_page.dart';
 import 'package:vvvpn_client/features/intro/widget/intro_page.dart';
 import 'package:vvvpn_client/features/log/overview/logs_page.dart';
@@ -248,6 +249,7 @@ class RoutingConfigNotifier extends _$RoutingConfigNotifier {
           ],
         ),
         GoRoute(name: 'intro', path: '/intro', builder: (_, _) => const IntroPage()),
+        GoRoute(name: 'login', path: '/login', builder: (_, _) => const LoginPage()),
       ],
     );
   }
