@@ -5,6 +5,7 @@ import 'package:vvvpn_client/core/app_info/app_info_provider.dart';
 import 'package:vvvpn_client/core/localization/translations.dart';
 import 'package:vvvpn_client/core/router/bottom_sheets/bottom_sheets_notifier.dart';
 import 'package:vvvpn_client/features/home/widget/connection_button.dart';
+import 'package:vvvpn_client/features/home/widget/empty_profiles_home_body.dart';
 import 'package:vvvpn_client/features/profile/notifier/active_profile_notifier.dart';
 import 'package:vvvpn_client/features/profile/widget/profile_tile.dart';
 import 'package:vvvpn_client/features/proxy/active/active_proxy_card.dart';
@@ -109,38 +110,36 @@ class HomePage extends HookConsumerWidget {
                 ),
                 child: CustomScrollView(
                   slivers: [
-                    // switch (activeProfile) {
-                    // AsyncData(value: final profile?) =>
-                    MultiSliver(
-                      children: [
-                        // const Gap(100),
-                        switch (activeProfile) {
-                          AsyncData(value: final profile?) => ProfileTile(
+                    switch (activeProfile) {
+                      AsyncData(value: final profile?) => MultiSliver(
+                        children: [
+                          ProfileTile(
                             profile: profile,
                             isMain: true,
                             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                             color: Theme.of(context).colorScheme.surfaceContainer,
                           ),
-                          _ => const Text(""),
-                        },
-                        const SliverFillRemaining(
-                          hasScrollBody: false,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [ConnectionButton(), ActiveProxyDelayIndicator()],
+                          const SliverFillRemaining(
+                            hasScrollBody: false,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [ConnectionButton(), ActiveProxyDelayIndicator()],
+                                  ),
                                 ),
-                              ),
-                              ActiveProxyFooter(),
-                            ],
+                                ActiveProxyFooter(),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
+                        ],
+                      ),
+                      // VVVPN: 无 profile 时主推登录页（webview 内嵌 vvvpn168.com/login）
+                      _ => const EmptyProfilesHomeBody(),
+                    },
                     // AsyncData() => switch (hasAnyProfile) {
                     //     AsyncData(value: true) => const EmptyActiveProfileHomeBody(),
                     //     _ => const EmptyProfilesHomeBody(),
