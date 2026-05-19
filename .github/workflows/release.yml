@@ -99,6 +99,29 @@ jobs:
           IS_GITHUB_ACTIONS: 1
           CHANNEL: prod
 
+      # flutter build macos 出来的 .app 里，launch_at_startup 插件的嵌套
+      # LaunchAtLoginHelper.app 签名校验不过（codesign -v 报 invalid Info.plist）。
+      # Apple Silicon 要求有效签名才能执行，未公证 + 嵌套签名失效 → 用户侧
+      # 报「已损坏，无法打开」，且右键打开无效。这里拆开 dmg、对 .app 做整包
+      # deep ad-hoc 重签、再重打 dmg —— 把「已损坏」消掉。
+      # 注：彻底零提示需 Apple Developer ID 签名 + 公证，待商务账号到位。
+      - name: Re-sign macOS app (deep ad-hoc) and repack dmg
+        if: matrix.platform == 'macos'
+        run: |
+          set -euxo pipefail
+          dmg=$(find dist build -type f -name "*.dmg" | head -n1)
+          echo "dmg: $dmg"
+          mnt=$(mktemp -d); work=$(mktemp -d)
+          hdiutil attach "$dmg" -nobrowse -mountpoint "$mnt"
+          cp -R "$mnt"/*.app "$work"/
+          hdiutil detach "$mnt"
+          app=$(find "$work" -maxdepth 1 -name "*.app" | head -n1)
+          codesign --force --deep --sign - "$app"
+          codesign -v --verbose=2 "$app"
+          ln -s /Applications "$work/Applications"
+          rm -f "$dmg"
+          hdiutil create -volname VVVPN -srcfolder "$work" -ov -format UDZO "$dmg"
+
       # Hiddify Makefile 的 windows-zip-release 用 `tar -a -cf <name>.zip Hiddify`
       # 妄图靠 -a 自动选 zip 格式，但 windows-latest runner 的 tar 不识别 zip
       # 后缀，造出来是 tar 改名 — Windows 双击 "无效的 zip"。
