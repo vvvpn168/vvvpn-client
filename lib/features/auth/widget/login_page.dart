@@ -4,6 +4,8 @@
 // api.vvvpn168.com → 设 session cookie → web 跳 /dashboard → 我们检测 URL
 // 变化 → 读 cookie → 调 /api/me/bundle → 拿订阅 URL → 自动 addProfile → 关页。
 
+import 'dart:io' show Platform;
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
@@ -11,6 +13,8 @@ import 'package:fpdart/fpdart.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:loggy/loggy.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
 import 'package:vvvpn_client/features/profile/data/profile_data_providers.dart';
 import 'package:vvvpn_client/utils/custom_loggers.dart';
 
@@ -117,6 +121,23 @@ class LoginPage extends HookConsumerWidget {
         sendTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 10),
       ));
+
+      // 设备登记（MVP #3）：服务端 DeviceRegistryDO 原子准入；超限自动踢 LRU。
+      // claim 失败不阻塞登录（log + 继续）；Linux/web 平台 enum 不支持，跳过。
+      final platform = _vvvpnPlatformName();
+      if (platform != null) {
+        try {
+          final deviceId = await _vvvpnGetOrCreateDeviceId();
+          await dio.post<Map<String, dynamic>>(
+            '/api/me/device',
+            data: {'deviceId': deviceId, 'platform': platform},
+          );
+          loggy.info('device claim OK: $platform/$deviceId');
+        } catch (e) {
+          loggy.warning('device claim failed (non-fatal)', e);
+        }
+      }
+
       final resp = await dio.get<Map<String, dynamic>>('/api/me/bundle');
       final data = resp.data;
       if (data == null) throw Exception('bundle 响应为空');
@@ -149,4 +170,32 @@ class LoginPage extends HookConsumerWidget {
       }
     }
   }
+}
+
+// ─────────────────────────────────────────────────────────────
+// 设备 ID 与平台辅助（MVP #3）
+//
+// deviceId 持久化在 SharedPreferences，全 app 生命周期共用同一 id；
+// 用户卸载重装 = 新 deviceId（视为新设备，合理）。
+// 平台 enum 与服务端 schema 对齐：windows | macos | android | ios。
+// Linux / web 暂不支持设备控制（API 不收）—— 返回 null 跳过 claim。
+// ─────────────────────────────────────────────────────────────
+
+const _vvvpnDeviceIdKey = 'vvvpn.device_id';
+
+String? _vvvpnPlatformName() {
+  if (Platform.isAndroid) return 'android';
+  if (Platform.isIOS) return 'ios';
+  if (Platform.isMacOS) return 'macos';
+  if (Platform.isWindows) return 'windows';
+  return null;
+}
+
+Future<String> _vvvpnGetOrCreateDeviceId() async {
+  final prefs = await SharedPreferences.getInstance();
+  final existing = prefs.getString(_vvvpnDeviceIdKey);
+  if (existing != null && existing.isNotEmpty) return existing;
+  final id = const Uuid().v4();
+  await prefs.setString(_vvvpnDeviceIdKey, id);
+  return id;
 }
