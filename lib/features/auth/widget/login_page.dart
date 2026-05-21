@@ -113,9 +113,11 @@ class LoginPage extends HookConsumerWidget {
     WidgetRef ref, {
     required WebViewEnvironment? env,
   }) {
+    _diagLog('_buildLoginScaffold: entry, env=${env != null ? "non-null" : "null"}');
     final theme = Theme.of(context);
     final loading = ValueNotifier<bool>(true);
     final processing = ValueNotifier<bool>(false);
+    _diagLog('_buildLoginScaffold: about to construct InAppWebView');
 
     return Scaffold(
       appBar: AppBar(
@@ -137,6 +139,9 @@ class LoginPage extends HookConsumerWidget {
               // 防止 webview 自己处理 clash:// 引发崩溃
               useShouldOverrideUrlLoading: true,
             ),
+            onWebViewCreated: (controller) {
+              _diagLog('InAppWebView.onWebViewCreated');
+            },
             shouldOverrideUrlLoading: (controller, navigationAction) async {
               final url = navigationAction.request.url?.toString() ?? '';
               if (url.startsWith('clash://') || url.startsWith('hiddify://')) {
@@ -145,18 +150,24 @@ class LoginPage extends HookConsumerWidget {
               }
               return NavigationActionPolicy.ALLOW;
             },
-            onLoadStart: (_, _) {
-              _diagLog('InAppWebView.onLoadStart');
+            onLoadStart: (_, url) {
+              _diagLog('InAppWebView.onLoadStart: $url');
               loading.value = true;
             },
-            onLoadStop: (_, _) {
-              _diagLog('InAppWebView.onLoadStop');
+            onLoadStop: (_, url) {
+              _diagLog('InAppWebView.onLoadStop: $url');
               loading.value = false;
             },
             onReceivedError: (_, request, error) {
               _diagLog(
                 'InAppWebView.onReceivedError: ${request.url} '
                 'type=${error.type} desc=${error.description}',
+              );
+            },
+            onReceivedHttpError: (_, request, response) {
+              _diagLog(
+                'InAppWebView.onReceivedHttpError: ${request.url} '
+                'status=${response.statusCode}',
               );
             },
             // Next.js 用 history.pushState 切路由，不会触发 onLoadStop —
@@ -366,9 +377,11 @@ Future<_LoginPrep> _prepLogin() async {
       settings: WebViewEnvironmentSettings(
         userDataFolder: dataFolder,
         // Win on ARM 下 x64 模拟器 GPU 子进程 + sandbox 容易崩。
-        // 强制 single-process + 关 GPU + 关 sandbox 绕过去。
-        additionalBrowserArguments:
-            '--disable-gpu --no-sandbox --single-process',
+        // 关 GPU + 关 sandbox 绕过去。**不能加 --single-process** ——
+        // chromium 的 single-process 模式有名地不稳定,InAppWebView 创建
+        // Controller 时本质需要 spawn renderer 子进程,single-process 下
+        // 会立刻崩(v4.1.8 翻车踩过)。
+        additionalBrowserArguments: '--disable-gpu --no-sandbox',
       ),
     );
     if (env == null) {
