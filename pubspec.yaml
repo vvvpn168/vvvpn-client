@@ -1,7 +1,7 @@
 name: vvvpn_client
 description: "VVVPN client (fork of Hiddify Next, GPL-3.0). Source: https://github.com/vvvpn168/vvvpn-client"
 publish_to: "none"
-version: 4.1.11+40111
+version: 4.1.12+40112
 
 environment:
   sdk: ^3.10.4

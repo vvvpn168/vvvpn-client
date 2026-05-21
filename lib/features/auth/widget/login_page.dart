@@ -7,7 +7,6 @@
 import 'dart:async' show Timer;
 import 'dart:io' show Directory, File, FileMode, Platform;
 
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
@@ -118,6 +117,9 @@ class LoginPage extends HookConsumerWidget {
     final theme = Theme.of(context);
     final loading = ValueNotifier<bool>(true);
     final processing = ValueNotifier<bool>(false);
+    // 捕获 controller 供 _handleLoginSuccess 用(走 webview 自己的 fetch 调 API,
+    // 避免 Windows WebView2 cookie store 拿不到 HttpOnly+SameSite=Lax 跨子域 cookie)
+    InAppWebViewController? capturedController;
     _diagLog('_buildLoginScaffold: about to construct InAppWebView');
 
     return Scaffold(
@@ -147,21 +149,18 @@ class LoginPage extends HookConsumerWidget {
             ),
             onWebViewCreated: (controller) async {
               _diagLog('InAppWebView.onWebViewCreated');
+              capturedController = controller;
               // 心跳 log:每 100ms 写「alive +N ms」,持续 5s。
               // 进程崩 → 心跳停 → diag 最后一行 = 崩前最后存活时间点。
-              // ARM 模拟器下崩在 onWebViewCreated 后,但具体多少 ms 内未知,
-              // 心跳能精准定位。
               final start = DateTime.now();
               final heartbeat = Timer.periodic(
                 const Duration(milliseconds: 100),
                 (t) {
                   final ms = DateTime.now().difference(start).inMilliseconds;
                   _diagLog('alive +${ms}ms after onWebViewCreated');
-                  if (t.tick >= 50) t.cancel(); // 5s 后停
+                  if (t.tick >= 50) t.cancel();
                 },
               );
-              // 留足心跳跑完再 loadUrl,避免 loadUrl 本身把进程拉崩盖掉
-              // 心跳信号。
               await Future<void>.delayed(const Duration(seconds: 2));
               try {
                 _diagLog('onWebViewCreated: calling loadUrl($_loginUrl)');
@@ -178,7 +177,6 @@ class LoginPage extends HookConsumerWidget {
               final url = navigationAction.request.url?.toString() ?? '';
               _diagLog('shouldOverrideUrlLoading: $url');
               if (url.startsWith('clash://') || url.startsWith('hiddify://')) {
-                // 不让 webview 加载 deeplink，由我们自己处理
                 return NavigationActionPolicy.CANCEL;
               }
               return NavigationActionPolicy.ALLOW;
@@ -215,7 +213,7 @@ class LoginPage extends HookConsumerWidget {
               if (uri.host == 'vvvpn168.com' && _successPathMatcher.hasMatch(uri.path)) {
                 if (processing.value) return;
                 processing.value = true;
-                await _handleLoginSuccess(context, ref);
+                await _handleLoginSuccess(context, ref, capturedController ?? controller);
               }
             },
           ),
@@ -249,58 +247,76 @@ class LoginPage extends HookConsumerWidget {
   }
 
   /// 检测到登录成功（webview URL 变 /dashboard）后：
-  /// 1. 从 cookie store 读 api.vvvpn168.com 的 session
-  /// 2. 调 /api/me/bundle 拿订阅 URL
-  /// 3. profileRepo.upsertRemote(url) 自动添加 profile
-  /// 4. 关闭本页回主页
-  Future<void> _handleLoginSuccess(BuildContext context, WidgetRef ref) async {
+  /// 1. 调 /api/me/bundle 拿订阅 URL —— 用 webview 自己 fetch
+  ///    (CookieManager.getCookies 在 WebView2 Windows 上拿不到 HttpOnly +
+  ///     SameSite=Lax 的跨子域 cookie;webview 内 fetch 不存在这问题,
+  ///     它已经登录、cookie 在 scope 内)
+  /// 2. profileRepo.upsertRemote(url) 自动添加 profile
+  /// 3. 关闭本页回主页
+  Future<void> _handleLoginSuccess(
+    BuildContext context,
+    WidgetRef ref,
+    InAppWebViewController controller,
+  ) async {
+    _diagLog('_handleLoginSuccess: start');
     final loggy = Loggy<InfraLogger>('LoginPage');
     try {
-      final cookies = await CookieManager.instance().getCookies(url: WebUri(_apiBase));
-      if (cookies.isEmpty) {
-        throw Exception('登录后 cookie 为空');
-      }
-      final cookieHeader = cookies.map((c) => '${c.name}=${c.value}').join('; ');
-
-      final dio = Dio(BaseOptions(
-        baseUrl: _apiBase,
-        headers: {'Cookie': cookieHeader, 'Accept': 'application/json'},
-        sendTimeout: const Duration(seconds: 10),
-        receiveTimeout: const Duration(seconds: 10),
-      ));
-
-      // 设备登记（MVP #3）：服务端 DeviceRegistryDO 原子准入；超限自动踢 LRU。
-      // claim 失败不阻塞登录（log + 继续）；Linux/web 平台 enum 不支持，跳过。
+      // 设备登记（MVP #3）：服务端 DeviceRegistryDO 原子准入。
+      // claim 失败不阻塞登录（log + 继续）；Linux/web 平台不支持，跳过。
       final platform = _vvvpnPlatformName();
       if (platform != null) {
         try {
           final deviceId = await _vvvpnGetOrCreateDeviceId();
-          await dio.post<Map<String, dynamic>>(
-            '/api/me/device',
-            data: {'deviceId': deviceId, 'platform': platform},
+          _diagLog('_handleLoginSuccess: device claim ($platform/$deviceId)');
+          await controller.callAsyncJavaScript(
+            functionBody: '''
+              const r = await fetch('$_apiBase/api/me/device', {
+                method: 'POST',
+                credentials: 'include',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ deviceId: deviceId, platform: platform })
+              });
+              return { ok: r.ok, status: r.status };
+            ''',
+            arguments: {'deviceId': deviceId, 'platform': platform},
           );
           loggy.info('device claim OK: $platform/$deviceId');
         } catch (e) {
+          _diagLog('_handleLoginSuccess: device claim failed (non-fatal): $e');
           loggy.warning('device claim failed (non-fatal)', e);
         }
       }
 
-      final resp = await dio.get<Map<String, dynamic>>('/api/me/bundle');
-      final data = resp.data;
+      _diagLog('_handleLoginSuccess: fetching /api/me/bundle');
+      final result = await controller.callAsyncJavaScript(
+        functionBody: '''
+          const r = await fetch('$_apiBase/api/me/bundle', { credentials: 'include' });
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return await r.json();
+        ''',
+      );
+      _diagLog('_handleLoginSuccess: bundle result error=${result?.error}');
+      if (result == null) throw Exception('bundle fetch 无响应');
+      if (result.error != null) throw Exception('bundle fetch 失败: ${result.error}');
+      final data = result.value as Map<dynamic, dynamic>?;
       if (data == null) throw Exception('bundle 响应为空');
-      final sub = data['subscription'] as Map<String, dynamic>?;
+
+      final sub = data['subscription'] as Map<dynamic, dynamic>?;
       final subUrl = sub?['url'] as String?;
+      _diagLog('_handleLoginSuccess: subscription url=${subUrl != null ? "(${subUrl.length} chars)" : "null"}');
       if (subUrl == null || subUrl.isEmpty) {
         throw Exception('订阅 URL 缺失');
       }
 
-      loggy.info('login OK, subscription URL: $subUrl');
+      loggy.info('login OK, subscription URL length=${subUrl.length}');
+      _diagLog('_handleLoginSuccess: calling upsertRemote');
       final repo = ref.read(profileRepositoryProvider).requireValue;
-      final result = await repo.upsertRemote(subUrl).run();
-      result.fold(
+      final addResult = await repo.upsertRemote(subUrl).run();
+      addResult.fold(
         (failure) => throw Exception('addProfile 失败: $failure'),
         (_) => null,
       );
+      _diagLog('_handleLoginSuccess: upsertRemote OK');
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -309,6 +325,7 @@ class LoginPage extends HookConsumerWidget {
         context.go('/home');
       }
     } catch (e, stack) {
+      _diagLog('_handleLoginSuccess: FAILED: $e');
       loggy.warning('handle login success failed', e, stack);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

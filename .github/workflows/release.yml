@@ -126,26 +126,48 @@ jobs:
       # 妄图靠 -a 自动选 zip 格式，但 windows-latest runner 的 tar 不识别 zip
       # 后缀，造出来是 tar 改名 — Windows 双击 "无效的 zip"。
       # 这里检查 magic，遇到非 PK 开头的就解压重打成真 zip。
-      - name: Repack Windows zip if it's actually tar
+      #
+      # 顺便一刀:剔除 bundled msvcp140/vcruntime140/vcruntime140_1.dll。
+      # Flutter Windows runner 自带的 VC++ runtime 是 14.34 (2022 vintage),
+      # WebView2 v148+ 用 14.50 API 编译,Windows DLL 搜索顺序优先 app 目录
+      # → 旧 dll 被强加载 → WebView2 调函数 NULL 返回 → 整进程 0xc0000005 闪退。
+      # 删掉 → 落到 system32 C++ runtime (Win10/11 自带 14.42+ 兼容)。
+      # v4.1.7-v4.1.11 用户「点登录瞬间闪退」就是这个坑;v4.1.12 起 CI 永久剔除。
+      - name: Repack Windows zip + strip bundled VC++ runtime
         if: matrix.platform == 'windows'
         shell: pwsh
         run: |
+          $stripDlls = @("msvcp140.dll", "vcruntime140.dll", "vcruntime140_1.dll",
+                         "vcruntime140_threads.dll", "concrt140.dll")
           Get-ChildItem -Recurse -Path dist -Filter "*.zip" | ForEach-Object {
             $f = $_.FullName
             $bytes = [System.IO.File]::ReadAllBytes($f) | Select-Object -First 4
             $isPK = ($bytes[0] -eq 0x50 -and $bytes[1] -eq 0x4B)
+
+            $tmp = Join-Path $env:RUNNER_TEMP "winzip-extract"
+            if (Test-Path $tmp) { Remove-Item -Recurse -Force $tmp }
+            New-Item -ItemType Directory -Path $tmp -Force | Out-Null
+
             if (-not $isPK) {
-              Write-Host "Repacking $f (was tar)"
-              $tmp = Join-Path $env:RUNNER_TEMP "winzip-extract"
-              if (Test-Path $tmp) { Remove-Item -Recurse -Force $tmp }
-              New-Item -ItemType Directory -Path $tmp -Force | Out-Null
+              Write-Host "Extracting $f (was tar)"
               tar -xf $f -C $tmp
-              Remove-Item $f
-              Compress-Archive -Path "$tmp\*" -DestinationPath $f
-              Write-Host "Done. New size: $((Get-Item $f).Length) bytes"
             } else {
-              Write-Host "$f is already a real ZIP"
+              Write-Host "Extracting $f (real zip)"
+              Expand-Archive -Path $f -DestinationPath $tmp -Force
             }
+
+            # Strip bundled VC++ runtime DLLs
+            foreach ($dll in $stripDlls) {
+              Get-ChildItem -Path $tmp -Recurse -Filter $dll -ErrorAction SilentlyContinue | ForEach-Object {
+                Write-Host "  removing bundled $($_.FullName)"
+                Remove-Item $_.FullName -Force
+              }
+            }
+
+            # Repack as real zip
+            Remove-Item $f
+            Compress-Archive -Path "$tmp\*" -DestinationPath $f
+            Write-Host "Repacked $f -> $((Get-Item $f).Length) bytes"
           }
 
       - name: Locate artifact (POSIX)
