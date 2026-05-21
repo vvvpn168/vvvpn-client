@@ -131,7 +131,12 @@ class LoginPage extends HookConsumerWidget {
         children: [
           InAppWebView(
             webViewEnvironment: env,
-            initialUrlRequest: URLRequest(url: WebUri(_loginUrl)),
+            // 初始 URL 故意用 about:blank ——  让 widget 初始化 / Controller spawn
+            // 和「真实网络 fetch」解耦。Controller 起来后在 onWebViewCreated 里
+            // 手动 loadUrl(login) 触发真请求。下次若再崩,diag 能精准指到是哪步:
+            //   - 看到 onLoadStart(about:blank) → widget+controller OK,挂在 fetch
+            //   - 看不到 onLoadStart → controller 自身的初始化期就挂了
+            initialUrlRequest: URLRequest(url: WebUri('about:blank')),
             initialSettings: InAppWebViewSettings(
               isInspectable: false,
               javaScriptEnabled: true,
@@ -139,11 +144,25 @@ class LoginPage extends HookConsumerWidget {
               // 防止 webview 自己处理 clash:// 引发崩溃
               useShouldOverrideUrlLoading: true,
             ),
-            onWebViewCreated: (controller) {
+            onWebViewCreated: (controller) async {
               _diagLog('InAppWebView.onWebViewCreated');
+              // 等 widget 第一帧画完(给 about:blank 一点时间稳定),再切到真 URL。
+              // 用 Future.delayed 让 chromium 主进程稳定下来,降低初次 navigation
+              // 的并发压力。
+              await Future<void>.delayed(const Duration(milliseconds: 300));
+              try {
+                _diagLog('onWebViewCreated: calling loadUrl($_loginUrl)');
+                await controller.loadUrl(
+                  urlRequest: URLRequest(url: WebUri(_loginUrl)),
+                );
+                _diagLog('onWebViewCreated: loadUrl returned');
+              } catch (e, st) {
+                _diagLog('onWebViewCreated: loadUrl FAILED: $e\n$st');
+              }
             },
             shouldOverrideUrlLoading: (controller, navigationAction) async {
               final url = navigationAction.request.url?.toString() ?? '';
+              _diagLog('shouldOverrideUrlLoading: $url');
               if (url.startsWith('clash://') || url.startsWith('hiddify://')) {
                 // 不让 webview 加载 deeplink，由我们自己处理
                 return NavigationActionPolicy.CANCEL;
@@ -157,6 +176,11 @@ class LoginPage extends HookConsumerWidget {
             onLoadStop: (_, url) {
               _diagLog('InAppWebView.onLoadStop: $url');
               loading.value = false;
+            },
+            onProgressChanged: (_, progress) {
+              if (progress == 0 || progress == 100 || progress % 25 == 0) {
+                _diagLog('InAppWebView.onProgressChanged: $progress');
+              }
             },
             onReceivedError: (_, request, error) {
               _diagLog(
@@ -376,12 +400,16 @@ Future<_LoginPrep> _prepLogin() async {
     final env = await WebViewEnvironment.create(
       settings: WebViewEnvironmentSettings(
         userDataFolder: dataFolder,
-        // Win on ARM 下 x64 模拟器 GPU 子进程 + sandbox 容易崩。
-        // 关 GPU + 关 sandbox 绕过去。**不能加 --single-process** ——
-        // chromium 的 single-process 模式有名地不稳定,InAppWebView 创建
-        // Controller 时本质需要 spawn renderer 子进程,single-process 下
-        // 会立刻崩(v4.1.8 翻车踩过)。
-        additionalBrowserArguments: '--disable-gpu --no-sandbox',
+        // Win on ARM 下 x64 模拟器多个 chromium 子进程 spawn 都会崩。
+        // - --no-sandbox: 关 sandbox(模拟器下 token impersonation 链不稳)
+        // - --disable-gpu: 关 GPU 子进程(渲染走 software)
+        // - --enable-features=NetworkServiceInProcess: 网络栈跑主进程内,
+        //   不 spawn NetworkService 子进程(v4.1.9 翻车原因 —— onWebViewCreated
+        //   后开始加载初始 URL 时 NetworkService 子进程 spawn 崩)
+        // **绝对不能加 --single-process** —— v4.1.8 翻过车:Controller spawn
+        // 时需要 renderer 子进程,single-process 下立刻挂。
+        additionalBrowserArguments:
+            '--no-sandbox --disable-gpu --enable-features=NetworkServiceInProcess',
       ),
     );
     if (env == null) {
