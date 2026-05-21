@@ -31,7 +31,10 @@ class DioHttpClient with InfraLogger {
 
       _dio[mode]!.httpClientAdapter = IOHttpClientAdapter(
         createHttpClient: () {
-          final client = HttpClient();
+          // 显式 withTrustedRoots:Win11 ARM 模拟器下 Dart 默认 SecurityContext
+          // 加载系统证书库会失败,导致下载订阅时 CERTIFICATE_VERIFY_FAILED。
+          // withTrustedRoots:true 让 BoringSSL 主动从系统证书库拉根证书。
+          final client = HttpClient(context: SecurityContext(withTrustedRoots: true));
           client.findProxy = (url) {
             if (mode == "proxy") {
               return "PROXY localhost:$port";
