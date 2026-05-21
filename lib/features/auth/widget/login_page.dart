@@ -4,6 +4,7 @@
 // api.vvvpn168.com → 设 session cookie → web 跳 /dashboard → 我们检测 URL
 // 变化 → 读 cookie → 调 /api/me/bundle → 拿订阅 URL → 自动 addProfile → 关页。
 
+import 'dart:async' show Timer;
 import 'dart:io' show Directory, File, FileMode, Platform;
 
 import 'package:dio/dio.dart';
@@ -146,10 +147,22 @@ class LoginPage extends HookConsumerWidget {
             ),
             onWebViewCreated: (controller) async {
               _diagLog('InAppWebView.onWebViewCreated');
-              // 等 widget 第一帧画完(给 about:blank 一点时间稳定),再切到真 URL。
-              // 用 Future.delayed 让 chromium 主进程稳定下来,降低初次 navigation
-              // 的并发压力。
-              await Future<void>.delayed(const Duration(milliseconds: 300));
+              // 心跳 log:每 100ms 写「alive +N ms」,持续 5s。
+              // 进程崩 → 心跳停 → diag 最后一行 = 崩前最后存活时间点。
+              // ARM 模拟器下崩在 onWebViewCreated 后,但具体多少 ms 内未知,
+              // 心跳能精准定位。
+              final start = DateTime.now();
+              final heartbeat = Timer.periodic(
+                const Duration(milliseconds: 100),
+                (t) {
+                  final ms = DateTime.now().difference(start).inMilliseconds;
+                  _diagLog('alive +${ms}ms after onWebViewCreated');
+                  if (t.tick >= 50) t.cancel(); // 5s 后停
+                },
+              );
+              // 留足心跳跑完再 loadUrl,避免 loadUrl 本身把进程拉崩盖掉
+              // 心跳信号。
+              await Future<void>.delayed(const Duration(seconds: 2));
               try {
                 _diagLog('onWebViewCreated: calling loadUrl($_loginUrl)');
                 await controller.loadUrl(
@@ -158,6 +171,7 @@ class LoginPage extends HookConsumerWidget {
                 _diagLog('onWebViewCreated: loadUrl returned');
               } catch (e, st) {
                 _diagLog('onWebViewCreated: loadUrl FAILED: $e\n$st');
+                heartbeat.cancel();
               }
             },
             shouldOverrideUrlLoading: (controller, navigationAction) async {
@@ -400,16 +414,13 @@ Future<_LoginPrep> _prepLogin() async {
     final env = await WebViewEnvironment.create(
       settings: WebViewEnvironmentSettings(
         userDataFolder: dataFolder,
-        // Win on ARM 下 x64 模拟器多个 chromium 子进程 spawn 都会崩。
-        // - --no-sandbox: 关 sandbox(模拟器下 token impersonation 链不稳)
-        // - --disable-gpu: 关 GPU 子进程(渲染走 software)
-        // - --enable-features=NetworkServiceInProcess: 网络栈跑主进程内,
-        //   不 spawn NetworkService 子进程(v4.1.9 翻车原因 —— onWebViewCreated
-        //   后开始加载初始 URL 时 NetworkService 子进程 spawn 崩)
-        // **绝对不能加 --single-process** —— v4.1.8 翻过车:Controller spawn
-        // 时需要 renderer 子进程,single-process 下立刻挂。
-        additionalBrowserArguments:
-            '--no-sandbox --disable-gpu --enable-features=NetworkServiceInProcess',
+        // Win on ARM 下 x64 模拟器 chromium 子进程 spawn 不稳。
+        // - --no-sandbox: 关 sandbox (模拟器下 token impersonation 链不稳)
+        // - --disable-gpu: 关 GPU 子进程,渲染走 software
+        // **绝对不能加**:
+        //   - --single-process (v4.1.8 Controller spawn 崩 —— renderer 子进程是必须的)
+        //   - --enable-features=NetworkServiceInProcess (v4.1.10 实测没救还可能干扰)
+        additionalBrowserArguments: '--no-sandbox --disable-gpu',
       ),
     );
     if (env == null) {
