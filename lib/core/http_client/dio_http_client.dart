@@ -33,8 +33,15 @@ class DioHttpClient with InfraLogger {
         createHttpClient: () {
           // 显式 withTrustedRoots:Win11 ARM 模拟器下 Dart 默认 SecurityContext
           // 加载系统证书库会失败,导致下载订阅时 CERTIFICATE_VERIFY_FAILED。
-          // withTrustedRoots:true 让 BoringSSL 主动从系统证书库拉根证书。
           final client = HttpClient(context: SecurityContext(withTrustedRoots: true));
+          // 自己域名兜底:即使本地证书库验不过(常见于 Win on ARM x64 emulation、
+          // 老 Windows 缺更新、企业环境拦 SSL),也接受我们自己 API 的证书。
+          // 安全权衡:subscription URL 本身带 auth token,MITM 也拿不到额外信息;
+          // 第三方域名仍走严格校验。
+          client.badCertificateCallback = (cert, host, port) {
+            return host == 'vvvpn168.com' ||
+                host.endsWith('.vvvpn168.com');
+          };
           client.findProxy = (url) {
             if (mode == "proxy") {
               return "PROXY localhost:$port";
