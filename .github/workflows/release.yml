@@ -301,16 +301,21 @@ jobs:
 
           npx --yes wrangler@4 r2 object put "$R2_BUCKET/download/$version/VVVPN-Android.apk" \
             --file "release-artifacts/VVVPN-Android.apk" \
-            --content-type "application/vnd.android.package-archive"
+            --content-type "application/vnd.android.package-archive" \
+            --remote
           npx --yes wrangler@4 r2 object put "$R2_BUCKET/download/$version/VVVPN-Windows-Portable-x64.zip" \
             --file "release-artifacts/VVVPN-Windows-Portable-x64.zip" \
-            --content-type "application/zip"
+            --content-type "application/zip" \
+            --remote
           npx --yes wrangler@4 r2 object put "$R2_BUCKET/download/$version/VVVPN-macOS.dmg" \
             --file "release-artifacts/VVVPN-macOS.dmg" \
-            --content-type "application/x-apple-diskimage"
+            --content-type "application/x-apple-diskimage" \
+            --remote
           npx --yes wrangler@4 r2 object put "$R2_BUCKET/download/$version/VVVPN-Linux-x64.AppImage" \
             --file "release-artifacts/VVVPN-Linux-x64.AppImage" \
-            --content-type "application/octet-stream"
+            --content-type "application/octet-stream" \
+            --remote
           npx --yes wrangler@4 r2 object put "$R2_BUCKET/download/manifest.json" \
             --file "release-artifacts/manifest.json" \
-            --content-type "application/json"
+            --content-type "application/json" \
+            --remote
