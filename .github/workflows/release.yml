@@ -96,10 +96,21 @@ jobs:
           IS_GITHUB_ACTIONS: 1
 
       - name: Build
+        if: matrix.platform != 'windows'
         run: make ${{ matrix.platform }}-release
         env:
           IS_GITHUB_ACTIONS: 1
           CHANNEL: prod
+
+      - name: Build Windows portable
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          flutter build windows `
+            --release `
+            --target lib/main_prod.dart `
+            --dart-define sentry_dsn= `
+            --dart-define portable=true
 
       # flutter build macos 出来的 .app 里，launch_at_startup 插件的嵌套
       # LaunchAtLoginHelper.app 签名校验不过（codesign -v 报 invalid Info.plist）。
@@ -193,21 +204,26 @@ jobs:
         run: |
           $stripDlls = @("msvcp140.dll", "vcruntime140.dll", "vcruntime140_1.dll",
                          "vcruntime140_threads.dll", "concrt140.dll")
-          $file = Get-ChildItem -Recurse -Path dist -Filter "*.${{ matrix.ext }}" -ErrorAction SilentlyContinue |
-            Where-Object { $_.Length -gt 10MB } |
+          $searchRoots = @("dist", "build")
+          $existingRoots = $searchRoots | Where-Object { Test-Path $_ }
+          $file = Get-ChildItem -Recurse -Path $existingRoots -Filter "*.${{ matrix.ext }}" -ErrorAction SilentlyContinue |
+            Where-Object { $_.Length -gt 10MB -and $_.FullName -notmatch "\\(test|tests|fixture|fixtures|sample|samples|example|examples|\.pub-cache)\\" } |
             Sort-Object Length -Descending |
             Select-Object -First 1
 
           if ($file) {
             Copy-Item $file.FullName -Destination "${{ matrix.artifact }}"
           } else {
-            $releaseDir = Get-ChildItem -Recurse -Path build/windows -Directory -ErrorAction SilentlyContinue |
-              Where-Object { Test-Path (Join-Path $_.FullName "Hiddify.exe") } |
+            $exe = Get-ChildItem -Recurse -Path $existingRoots -Filter "*.exe" -ErrorAction SilentlyContinue |
+              Where-Object { $_.FullName -notmatch "\\(test|tests|fixture|fixtures|sample|samples|example|examples|\.pub-cache)\\" } |
+              Sort-Object Length -Descending |
               Select-Object -First 1
-            if (-not $releaseDir) {
-              Get-ChildItem -Recurse -Path dist,build/windows -ErrorAction SilentlyContinue | Select-Object FullName,Length -First 80
+            if (-not $exe) {
+              Get-ChildItem -Recurse -Path $existingRoots -ErrorAction SilentlyContinue |
+                Select-Object FullName,Length -First 160
               throw "no Windows release directory or .zip artifact found"
             }
+            $releaseDir = $exe.Directory
 
             $tmp = Join-Path $env:RUNNER_TEMP "windows-portable"
             if (Test-Path $tmp) { Remove-Item -Recurse -Force $tmp }
