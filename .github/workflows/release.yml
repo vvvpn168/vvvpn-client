@@ -2,6 +2,8 @@ name: Release
 
 on:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
   workflow_dispatch:
@@ -208,8 +210,107 @@ jobs:
           prerelease: false
 
       - name: Upload artifact (workflow_dispatch)
-        if: github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
           path: ${{ matrix.artifact }}
+
+  publish-r2:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      R2_BUCKET: ${{ vars.R2_BUCKET_NAME || secrets.R2_BUCKET_NAME || 'vvvpn-storage' }}
+      DOWNLOAD_BASE_URL: ${{ vars.CLIENT_DOWNLOAD_BASE_URL || secrets.CLIENT_DOWNLOAD_BASE_URL || 'https://download.vvvpn168.com' }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+          merge-multiple: true
+
+      - name: Build release manifest
+        run: |
+          set -euo pipefail
+          version_line=$(grep -E '^version:' pubspec.yaml | awk '{print $2}')
+          app_version="${version_line%%+*}"
+          build_number="${version_line#*+}"
+          release_version="v${app_version}"
+          published_at=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          base_url="${DOWNLOAD_BASE_URL%/}"
+
+          export RELEASE_VERSION="$release_version"
+          export APP_VERSION="$app_version"
+          export BUILD_NUMBER="$build_number"
+          export PUBLISHED_AT="$published_at"
+          export BASE_URL="$base_url"
+
+          node <<'NODE'
+          const fs = require("node:fs");
+          const crypto = require("node:crypto");
+
+          const files = {
+            android: "VVVPN-Android.apk",
+            windows: "VVVPN-Windows-Portable-x64.zip",
+            macos: "VVVPN-macOS.dmg",
+            linux: "VVVPN-Linux-x64.AppImage",
+          };
+
+          const manifest = {
+            version: process.env.RELEASE_VERSION,
+            appVersion: process.env.APP_VERSION,
+            buildNumber: process.env.BUILD_NUMBER,
+            publishedAt: process.env.PUBLISHED_AT,
+            source: {
+              repository: "vvvpn168/vvvpn-client",
+              branch: process.env.GITHUB_REF_NAME,
+              commit: process.env.GITHUB_SHA,
+              runId: process.env.GITHUB_RUN_ID,
+            },
+            artifacts: {},
+          };
+
+          for (const [platform, fileName] of Object.entries(files)) {
+            const filePath = `release-artifacts/${fileName}`;
+            if (!fs.existsSync(filePath)) {
+              throw new Error(`missing artifact: ${filePath}`);
+            }
+            const bytes = fs.readFileSync(filePath);
+            const r2Key = `download/${process.env.RELEASE_VERSION}/${fileName}`;
+            manifest.artifacts[platform] = {
+              name: fileName,
+              r2Key,
+              url: `${process.env.BASE_URL}/${r2Key}`,
+              size: bytes.length,
+              sha256: crypto.createHash("sha256").update(bytes).digest("hex"),
+            };
+          }
+
+          fs.writeFileSync("release-artifacts/manifest.json", `${JSON.stringify(manifest, null, 2)}\n`);
+          NODE
+
+      - name: Upload artifacts to R2
+        run: |
+          set -euo pipefail
+          version=$(node -p "require('./release-artifacts/manifest.json').version")
+
+          npx --yes wrangler@4 r2 object put "$R2_BUCKET/download/$version/VVVPN-Android.apk" \
+            --file "release-artifacts/VVVPN-Android.apk" \
+            --content-type "application/vnd.android.package-archive"
+          npx --yes wrangler@4 r2 object put "$R2_BUCKET/download/$version/VVVPN-Windows-Portable-x64.zip" \
+            --file "release-artifacts/VVVPN-Windows-Portable-x64.zip" \
+            --content-type "application/zip"
+          npx --yes wrangler@4 r2 object put "$R2_BUCKET/download/$version/VVVPN-macOS.dmg" \
+            --file "release-artifacts/VVVPN-macOS.dmg" \
+            --content-type "application/x-apple-diskimage"
+          npx --yes wrangler@4 r2 object put "$R2_BUCKET/download/$version/VVVPN-Linux-x64.AppImage" \
+            --file "release-artifacts/VVVPN-Linux-x64.AppImage" \
+            --content-type "application/octet-stream"
+          npx --yes wrangler@4 r2 object put "$R2_BUCKET/download/manifest.json" \
+            --file "release-artifacts/manifest.json" \
+            --content-type "application/json"
