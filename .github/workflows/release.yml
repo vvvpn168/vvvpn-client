@@ -105,6 +105,8 @@ jobs:
       - name: Build Windows portable
         if: matrix.platform == 'windows'
         shell: pwsh
+        env:
+          CL: /D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS
         run: |
           flutter build windows `
             --release `
