@@ -191,10 +191,15 @@ jobs:
         id: find_win
         shell: pwsh
         run: |
-          $file = Get-ChildItem -Recurse -Path dist,build -Filter "*.${{ matrix.ext }}" -ErrorAction SilentlyContinue | Select-Object -First 1
+          $file = Get-ChildItem -Recurse -Path dist -Filter "*.${{ matrix.ext }}" -ErrorAction SilentlyContinue |
+            Sort-Object Length -Descending |
+            Select-Object -First 1
           if (-not $file) {
-            Get-ChildItem -Recurse -Path dist,build -ErrorAction SilentlyContinue | Select-Object FullName -First 50
+            Get-ChildItem -Recurse -Path dist -ErrorAction SilentlyContinue | Select-Object FullName -First 50
             throw "no .${{ matrix.ext }} artifact found"
+          }
+          if ($file.Length -lt 10MB) {
+            throw "windows artifact is unexpectedly small: $($file.FullName) $($file.Length) bytes"
           }
           Copy-Item $file.FullName -Destination "${{ matrix.artifact }}"
           "path=${{ matrix.artifact }}" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
