@@ -191,17 +191,44 @@ jobs:
         id: find_win
         shell: pwsh
         run: |
+          $stripDlls = @("msvcp140.dll", "vcruntime140.dll", "vcruntime140_1.dll",
+                         "vcruntime140_threads.dll", "concrt140.dll")
           $file = Get-ChildItem -Recurse -Path dist -Filter "*.${{ matrix.ext }}" -ErrorAction SilentlyContinue |
+            Where-Object { $_.Length -gt 10MB } |
             Sort-Object Length -Descending |
             Select-Object -First 1
-          if (-not $file) {
-            Get-ChildItem -Recurse -Path dist -ErrorAction SilentlyContinue | Select-Object FullName -First 50
-            throw "no .${{ matrix.ext }} artifact found"
+
+          if ($file) {
+            Copy-Item $file.FullName -Destination "${{ matrix.artifact }}"
+          } else {
+            $releaseDir = Get-ChildItem -Recurse -Path build/windows -Directory -ErrorAction SilentlyContinue |
+              Where-Object { Test-Path (Join-Path $_.FullName "Hiddify.exe") } |
+              Select-Object -First 1
+            if (-not $releaseDir) {
+              Get-ChildItem -Recurse -Path dist,build/windows -ErrorAction SilentlyContinue | Select-Object FullName,Length -First 80
+              throw "no Windows release directory or .zip artifact found"
+            }
+
+            $tmp = Join-Path $env:RUNNER_TEMP "windows-portable"
+            if (Test-Path $tmp) { Remove-Item -Recurse -Force $tmp }
+            New-Item -ItemType Directory -Path $tmp -Force | Out-Null
+            Copy-Item $releaseDir.FullName -Destination (Join-Path $tmp "Hiddify") -Recurse
+
+            foreach ($dll in $stripDlls) {
+              Get-ChildItem -Path $tmp -Recurse -Filter $dll -ErrorAction SilentlyContinue | ForEach-Object {
+                Write-Host "  removing bundled $($_.FullName)"
+                Remove-Item $_.FullName -Force
+              }
+            }
+
+            Compress-Archive -Path (Join-Path $tmp "Hiddify") -DestinationPath "${{ matrix.artifact }}"
           }
-          if ($file.Length -lt 10MB) {
-            throw "windows artifact is unexpectedly small: $($file.FullName) $($file.Length) bytes"
+
+          $artifact = Get-Item "${{ matrix.artifact }}"
+          if ($artifact.Length -lt 10MB) {
+            throw "windows artifact is unexpectedly small: $($artifact.FullName) $($artifact.Length) bytes"
           }
-          Copy-Item $file.FullName -Destination "${{ matrix.artifact }}"
+          Write-Host "Windows artifact: $($artifact.FullName) $($artifact.Length) bytes"
           "path=${{ matrix.artifact }}" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
 
       - name: Upload to Release
